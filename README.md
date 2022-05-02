@@ -86,7 +86,7 @@ If you keep the default settings for the oAuth flow in code in the app.py code, 
 http://0.0.0.0:3000/callback  
 This will have to change if later run the sample on a different port or IP address.  
 Once the integration is created, take note of the Client ID and Secret generated to use in the environment variables below.    
-
+NOTE: In Windows you cannot easily use 0.0.0.0 as the local IP address but rather 127.0.0.1 . Use http://127.0.0.1:3000/callback for the Redirect URI field then.  
 
 Once the Webex Integration is created, you can edit the `.env` file in the directory where you cloned this repository to fill out the following configuration variables:
 
@@ -103,7 +103,7 @@ Set PUBLIC_URL to the URL where your instance of this Flask application will run
 of app.run() at the end of the main.py file, this should be the same value of 'http://0.0.0.0:3000' that is set by default 
 in the sample code.  
 NOTE: This URL does not actually have to map to a public IP address out on the internet.  
-
+NOTE: In Windows you cannot easily use 0.0.0.0 as the local IP address but rather 127.0.0.1 . Use http://127.0.0.1:3000  instead.  
 
 
 ## Usage
@@ -113,7 +113,7 @@ NOTE: This URL does not actually have to map to a public IP address out on the i
     python app.py
     ```
 
-2. Navigate to the local application on your browser http://0.0.0.0:3000 or whatever URL and port you set in the `app.run()` call in the app.py file.
+2. Navigate to the local application on your browser http://0.0.0.0:3000 , http://127.0.0.1:3000 or whatever URL and port you set in the `app.run()` call in the app.py file.
 
 3. Log into the application using the credentials of a Webex Meetings user to see select meetings that occured in the past to generate attendance reports:  
     * The user must be a member of the Webex Teams organization that you created the integration with.  
