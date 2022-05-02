@@ -1,0 +1,83 @@
+<!doctype html>
+<html id="styleguide" class="" lang="en">
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+        <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">  
+
+        <title>Webex Meetings Attendance Reports Collector</title>
+        <link rel="stylesheet" href="{{ url_for('static', filename='css/cui-standard.css') }}">
+        <link rel="icon" href="{{ url_for('static', filename='images/Logo_small_blue.png')}}">                    
+        <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-1BmE4kWBq78iYhFldvKuhfTAU6auU8tT94WrHftjDbrCEXSU1oBoqyl2QvZ6jIW3" crossorigin="anonymous">
+        <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.css" />
+        <link rel="stylesheet" href="{{ url_for('static', filename='css/customStyles.css') }}">
+        <script src="https://code.jquery.com/jquery-3.6.0.min.js" integrity="sha256-/xUj+3OJU5yExlq6GSYGSHk7tPXikynS7ogEvDej/m4=" crossorigin="anonymous"></script>
+        <script src="{{ url_for('static', filename='js/styleguide.js') }}"></script>
+        <script src="{{ url_for('static', filename='js/loader.js') }}"></script>
+        <script src="{{ url_for('static', filename='js/selects.js') }}"></script>
+        <!--script link for Charts.js library-->
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.9.3/Chart.bundle.min.js"></script>
+        <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-ka7Sk0Gln4gmtz2MlQnikT1wXgYsOg+OMhuP+IlRH9sENBO0LRn5q+8nbTov4+1p" crossorigin="anonymous"></script>
+        <script type="text/javascript" src="https://cdn.jsdelivr.net/momentjs/latest/moment.min.js"></script>
+        <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.min.js"></script>
+        <!-- <script src="{{ url_for('static', filename='js/custom.js') }}"></script> -->
+    </head>
+        <body class="cui">
+            <!-- Header -->
+            <nav class="header" id="styleguideheader" role="navigation">
+                <div class="container-fluid">
+                    <div class="header-panels">
+                        <!--Cisco logo and title area (left)-->
+                        <div class="header-panel">
+                            <a class="header-bar__logo header__logo" href="https://gve-devnet.cisco.com/" target="_blank">
+                                <span id="header-logo" class="icon-cisco"></span>
+                            </a>
+                            <h1 class="header__title">Webex Meetings Attendance Collector</h1>
+                        </div>
+                        <!--Center area (middle)-->
+                        <div class="header-panel header-panel--center">
+                        </div>
+                        <!--Link area (right)-->
+                        <div class="header-panel header-panel--right"> 
+                            <!--CUSTOMIZE: Add or remove Header links-->
+                            <!--PASS INFO: Header links are hidden, if hiddenLinks=false variable is passed to child template-->
+                            <a class="header-item {% if hiddenLinks == True %}hidden-5xl-down{% endif %}" href="/"><span class="icon-home"></span></a> 
+                            <a class="header-item {% if hiddenLinks == True %}hidden-5xl-down{% endif %}" href="/"><!--CUSTOMIZE: Menu element name--></a>
+                            <a class="header-item {% if hiddenLinks == True %}hidden-5xl-down{% endif %}" href="/logout">Logout</a>
+                            <!--CUSTOMIZE END-->
+                        </div>  
+                    </div>
+                </div>
+            </nav>
+            <!--Content-->
+            <div class="content content--alt">
+                <div class="loader"></div>
+                <div class="page-overlay"></div>
+                <div class="container-fluid">                
+                        {% block content %}
+                        {% endblock %} 
+                </div>
+            </div>
+            <!-- Footer -->
+            <footer class="footer">
+                <div class="footer__links">
+                    <ul class="list list--inline">
+                        <!--Cisco Design:-->
+                        <li><a href="https://gve-devnet.cisco.com/"><img id="footer-link-gve-devnet" src="{{ url_for('static', filename='images/Logo_long_blue.png')}}"></a></li>
+                        <li><a href="http://www.cisco.com/cisco/web/siteassets/contacts/index.html" target="_blank">Contacts</a></li>
+                        <li><a href="https://secure.opinionlab.com/ccc01/o.asp?id=jBjOhqOJ" target="_blank">Feedback</a></li>
+                        <li><a href="https://www.cisco.com/c/en/us/about/help.html" target="_blank">Help</a></li>
+                        <li><a href="https://www.cisco.com/c/en/us/about/legal/terms-conditions.html" target="_blank">Terms & Conditions</a></li></li>
+                        <li><a href="https://www.cisco.com/c/en/us/about/legal/privacy-full.html" target="_blank">Privacy Statement</a></li>
+                        <li><a href="https://www.cisco.com/c/en/us/about/legal/privacy-full.html#cookies" target="_blank">Cookie Policy</a></li>
+                        <li><a href="https://www.cisco.com/c/en/us/about/legal/trademarks.html" target="_blank">Trademarks</a></li>
+                    </ul>
+                    <div id="time_location_note">
+                        {{ timeAndLocation }}
+                    </div>
+                </div>
+            </footer>
+        </body>
+    </html>
+    

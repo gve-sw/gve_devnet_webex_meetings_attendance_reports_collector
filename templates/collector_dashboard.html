@@ -1,0 +1,287 @@
+<!-- Dashboard for Participants Collector -->
+
+{% extends "masterPage.html" %}
+
+{% block content %}
+<script>
+    function convertToCSV(objArray) {
+    var array = typeof objArray != 'object' ? JSON.parse(objArray) : objArray;
+    var str = '';
+    for (var i = 0; i < array.length; i++) {
+        var line = '';
+        for (var index in array[i]) {
+            if (line != '') line += ','
+            line += array[i][index];
+        }
+        str += line + '\r\n';
+    }
+    return str;
+}
+
+function exportCSVFile(headers, items, fileTitle) {
+    if (headers) {
+        items.unshift(headers);
+    }
+    // Convert Object to JSON
+    var jsonObject = JSON.stringify(items);
+    var csv = this.convertToCSV(jsonObject);
+    var exportedFilenmae = fileTitle + '.csv' || 'export.csv';
+    var blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+
+    if (navigator.msSaveBlob) { // IE 10+
+        navigator.msSaveBlob(blob, exportedFilenmae);
+    } else {
+        var link = document.createElement("a");
+        if (link.download !== undefined) { // feature detection
+            // Browsers that support HTML5 download attribute
+            var url = URL.createObjectURL(blob);
+            link.setAttribute("href", url);
+            link.setAttribute("download", exportedFilenmae);
+            link.style.visibility = 'hidden';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+    }
+}
+
+$(document).ready(function($) {
+    $(".loader").css("display", "none");
+    $(".page-overlay").css("display", "none");
+
+    // Pre-fill meetings list with today
+    setTimeout(
+        function() {
+            let date = $('#dateSelect').val()
+            let start = date.substr(0, date.indexOf('-')-1)+'T00:00:00'
+            start = start.replaceAll('/', '-')
+            let end = date.substr(date.indexOf('-')+2, date.length-1)+'T{{ currTime }}'
+            // console.log((start, end))
+            end = end.replaceAll('/', '-')
+            $(".loader").css("display", "block");
+            $(".page-overlay").css("display", "block");
+            $.ajax({
+                url: '/retrieve-meetings',
+                type: "POST",
+                data: JSON.stringify({ 'from': start, 'to': end }),
+                contentType:"application/json; charset=utf-8",
+                dataType:"json",
+                success: function(data){
+                    $("#meetings-list").empty();
+                    if (data.items.length < 1) {
+                        $("#meetings-list").append('<li class="list-group-item">No Meetings for Date Range</li>')
+                    } else {
+                        let checkedLookup = {}
+                        for (let i=0;i<data.items.length;i++) {
+                            // sets individual meeting object
+                            let meeting = data.items[i];
+
+                            // console.log("meeting info 1:")
+                            console.log(meeting)
+
+                            // set a hash lookup for each meeting when checked
+                            checkedLookup[meeting.id] = true
+                            $("#meetings-list").append(
+                                // '<li class="list-group-item">Meeting ' + meeting.id + ': ' + meeting.title + '</li>'
+                                `<li class="list-group-item">
+                                    <div class="d-flex flex-row">
+                                        <div class="d-flex align-items-center m-5">
+                                            <input ${checkedLookup.hasOwnProperty(meeting.id) ? "checked" : ""} type="checkbox" class="form-check-input m-0" id="${meeting.id}" name="MeetingIsSelected" value="Bike">
+                                        </div>
+                                        <div class="w-100">
+                                            <div class="list-group flex-column align-items-start">
+                                            <div class="d-flex w-100 justify-content-between align-items-center">
+                                                <div>
+                                                    <h5 class="mb-1">${meeting.title}</h5>
+                                                </div>
+                                                <small class="text-right">Start ${meeting.start} ${meeting.timezone}<br />End ${meeting.end} ${meeting.timezone}</small>
+                                            </div>
+                                            <p class="mb-1">${meeting.agenda}<br /></p>
+                                            <small>Hosted by ${meeting.hostDisplayName}</small>
+                                            </div>
+                                        </div>
+                                </li>`
+                            )
+                            $('#generate-report').prop('disabled', false);
+                        }
+                    }
+                    $(".loader").css("display", "none");
+                    $(".page-overlay").css("display", "none");
+                }
+            })
+        }, 1);
+
+    if ($("#meetings-list a").length < 1)
+        $("#meetings-list").append('<li class="list-group-item">No Meetings for Date Range</li>')
+
+    $(document).on('click', '#generate-report', function(event) {
+        event.preventDefault();
+        // Get date range
+        let date = $('#dateSelect').val()
+        
+        // start should be beginning of the day
+        let start = date.substr(0, date.indexOf('-')-1)+'T00:00:00'
+        start = start.replaceAll('/', '-')
+        
+        // we want the end date to default to 23:59:59 of the last selected day
+        let end = date.substr(date.indexOf('-')+2, date.length-1)+'T23:59:59'
+        end = end.replaceAll('/', '-')
+
+        $(".loader").css("display", "block");
+        $(".page-overlay").css("display", "block");
+
+        $.ajax({
+                url: '/generate-report',
+                type: "POST",
+                data: JSON.stringify({ 'from': start, 'to': end }),
+                contentType:"application/json",
+                dataType:"json",
+                success: function(r){
+                    $(".loader").css("display", "none");
+                    $(".page-overlay").css("display", "none");
+                    
+                    // convert to csv
+                    var file = r.items;
+                    var headers = {
+                        meeting_title: "Meeting Name",
+                        meeting_start_time: "Meeting Start Time",
+                        meeting_end_time: "Meeting End Time",
+                        displayName: "Name",
+                        email: "Attendee Email",
+                        joinedTime: "joinedTime",
+                        leftTime: "leftTime"
+                    };
+
+                    // "id", "orgId", "host", "coHost", "spaceModerator", "email", "displayName", "invitee", "muted", "state", "joinedTime", "leftTime", "siteUrl", "meetingId", "hostEmail", "devices"
+                    let itemsNotFormatted = file;
+                    var itemsFormatted = [];
+
+                    // format data
+                    itemsNotFormatted.forEach((item) => {
+                        // console.log("this is happening...")
+
+                        // // Get which events are checked
+                        let id_to_lookup = "#" + item.meetingId.toString()
+
+                        //only push items to CSV that are checked!                       
+                        if ($(id_to_lookup).is(':checked'))
+                            itemsFormatted.push({
+                                meeting_title: item.meeting_title,
+                                meeting_start_time: item.meeting_start_time,
+                                meeting_end_time: item.meeting_end_time,
+                                displayName: item.displayName,
+                                email: item.email,
+                                joinedTime: item.joinedTime,
+                                leftTime: item.leftTime              
+                            });                         
+                    });
+                    // generate filename based on date-time meeting-participants
+                    var fileTitle = "meeting-participants-{{ sysTime }}";
+                    // call the exportCSVFile() function to process the JSON and trigger the download
+                    if (itemsFormatted.length == 0){
+                        alert("Please select at least one meeting.")
+                        return
+                    }
+
+                    if (itemsFormatted.length != 0)
+                        exportCSVFile(headers, itemsFormatted, fileTitle);
+                }
+        })
+  });
+
+  $('input[name="daterange"]').daterangepicker({
+    maxDate: new Date(),
+    opens: 'left',
+    locale: {format: 'YYYY/MM/DD'}
+    }, function(start, end, label) {
+        $(".loader").css("display", "block");
+        $(".page-overlay").css("display", "block");
+        // Generate list for meetings
+        $.ajax({
+            url: '/retrieve-meetings',
+            type: "POST",
+            data: JSON.stringify({ 'from': start.format('YYYY-MM-DD')+'T00:00:00', 'to': end.format('YYYY-MM-DD')+'T23:59:59' }),
+            contentType:"application/json; charset=utf-8",
+            dataType:"json",
+            success: function(data){
+                $(".loader").css("display", "none");
+                $(".page-overlay").css("display", "none");
+                $("#meetings-list").empty();
+                if (data.items.length < 1) {
+                    $("#meetings-list").append('<li class="list-group-item">No Meetings for Date Range</li>')
+                } else {
+                    let checkedLookup = {}
+                    for (let i=0;i<data.items.length;i++) {
+                            // sets individual meeting object
+                            let meeting = data.items[i];
+
+                            // console.log("meeting info 2:")
+                            // console.log(meeting)
+
+                            // set a hash lookup for each meeting when checked
+                            checkedLookup[meeting.id] = true
+                            $("#meetings-list").append(
+                                // '<li class="list-group-item">Meeting ' + meeting.id + ': ' + meeting.title + '</li>'
+                                `<li class="list-group-item">
+                                    <div class="d-flex flex-row">
+                                        <div class="d-flex align-items-center m-5">
+                                            <input ${checkedLookup.hasOwnProperty(meeting.id) ? "checked" : ""} type="checkbox" class="form-check-input m-0" id="${meeting.id}" name="MeetingIsSelected" value="Bike">
+                                        </div>
+                                        <div class="w-100">
+                                            <div class="list-group flex-column align-items-start">
+                                            <div class="d-flex w-100 justify-content-between align-items-center">
+                                                <div>
+                                                    <h5 class="mb-1">${meeting.title}</h5>
+                                                </div>
+                                                <small class="text-right">Start ${meeting.start} ${meeting.timezone}<br />End ${meeting.end} ${meeting.timezone}</small>
+                                            </div>
+                                            <p class="mb-1">${meeting.agenda}<br /></p>
+                                            <small>Hosted by ${meeting.hostDisplayName}</small>
+                                            </div>
+                                        </div>
+                                </li>`
+                            )
+                            $('#generate-report').prop('disabled', false);
+                        }
+                }
+            }
+        })
+    });
+    // select all function
+    $('#selectAll').click(function(e) {
+        e.preventDefault
+        // if check -> unsellect all onClick
+        if ($(this).is(':checked')){
+            $(".form-check-input" ).prop( "checked", true );
+        } else {
+            $(".form-check-input" ).prop( "checked", false );
+        }        
+    });
+});
+</script>
+<div class="row">
+    <h2><strong>Calendar</strong></h2>
+</div>
+<div class="row pb-2">
+    <div class="col">
+        <!-- Dropdown Menu -->
+        <h5>Select Date Range
+            <span><input id="dateSelect" type="button" class="btn btn-default dropdown-toggle" name="daterange" value="01/01/2018 - 01/15/2018" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false"></input></span>
+        </h5>
+        <div class="form-check">
+            <input class="form-check-input" type="checkbox" value="" id="selectAll" checked>
+            <label class="form-check-label" for="selectAll">
+                Select all
+            </label>
+        </div>
+    </div>
+</div>
+<div class="row">
+    <div class="col">
+        <div class="list-group" id="meetings-list"></div>
+    </div>
+</div>
+<div class="row pt-2">
+    <button class="btn btn-default" id="generate-report" disabled>Generate Meetings Report</button>
+</div>
+{%  endblock %}
